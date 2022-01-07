@@ -4,8 +4,7 @@ import java.io.*;
 
 /**
  * @author kataer
- * @description: TODO
- * @date 2022/1/5.
+ * @date 2022/1/7
  */
 public class SerializationTest {
   public static void main(String[] args) {

@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 /**
  * @author kataer
- * @description: TODO
  * @date 2022/1/5.
  */
 public class Cat implements Serializable {

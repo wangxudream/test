@@ -6,7 +6,7 @@ package com.kataer.unsafe;
  * @date 2022/2/9
  */
 public class UnSafeTest {
-  private static final sun.misc.Unsafe UNSAFE;
+  public static final sun.misc.Unsafe UNSAFE;
 
   static {
     ClassLoader appClassLoader = UnSafeTest.class.getClassLoader();

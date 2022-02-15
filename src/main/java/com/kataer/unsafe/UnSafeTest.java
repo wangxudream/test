@@ -2,7 +2,7 @@ package com.kataer.unsafe;
 
 /**
  * @author kataer
- * @description: 获取unsafe
+ * @description: 通过将类加入根路径获取unsafe
  * @date 2022/2/9
  */
 public class UnSafeTest {

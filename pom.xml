@@ -6,8 +6,9 @@
   <artifactId>test</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <name>test</name>
-  <packaging>pom</packaging>
+  <!--  <packaging>pom</packaging>-->
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
@@ -23,24 +24,59 @@
       <artifactId>fastjson</artifactId>
       <version>1.2.70</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.32</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>1.7.32</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
-<!--    <dependency>-->
-<!--      <groupId>ch.qos.logback</groupId>-->
-<!--      <artifactId>logback-classic</artifactId>-->
-<!--      <version>1.2.10</version>-->
-<!--    </dependency>-->
-
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.2.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <useUniqueVersions>false</useUniqueVersions>
+              <classpathPrefix>./lib/</classpathPrefix>
+              <mainClass>com.kataer.HelloWorld</mainClass>
+            </manifest>
+            <!--            <manifestEntries>  &lt;!&ndash;将ojdbc8-1.0.jar写进MANIFEST.MF文件中的Class-Path&ndash;&gt;-->
+            <!--              <Class-Path>lib/ojdbc8-1.0.jar</Class-Path>-->
+            <!--            </manifestEntries>-->
+          </archive>
+          <!--          <excludes>-->
+          <!--            <exclude>log4j2-test.xml</exclude>-->
+          <!--          </excludes>-->
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <type>jar</type>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>

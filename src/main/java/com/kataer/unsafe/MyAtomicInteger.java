@@ -52,7 +52,7 @@ public class MyAtomicInteger {
 
   public static void main(String[] args) {
     int size = 100;
-    final CountDownLatch countDownLatch = new CountDownLatch(100);
+    final CountDownLatch countDownLatch = new CountDownLatch(size);
     final MyAtomicInteger atomic = new MyAtomicInteger(0);
     ExecutorService executorService = Executors.newFixedThreadPool(5);
     for (int i = 0; i < size; i++) {

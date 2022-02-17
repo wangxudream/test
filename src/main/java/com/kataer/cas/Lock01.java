@@ -2,13 +2,21 @@ package com.kataer.cas;
 
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
-public class Sync02 {
+/**
+ * 这是AQS源码里的例子
+ * 该版本的锁能被其它线程释放
+ */
+public class Lock01 {
   private static int m;
 
   class Sync extends AbstractQueuedSynchronizer {
     @Override
     protected boolean tryAcquire(int arg) {
+      //cas成功则认为获取锁成功
       if (compareAndSetState(0, 1)) {
+        /**
+         * 设置所有者线程
+         */
         setExclusiveOwnerThread(Thread.currentThread());
         return true;
       }
@@ -17,10 +25,13 @@ public class Sync02 {
 
     @Override
     protected boolean tryRelease(int arg) {
-      if (getState() == 0) {
-        throw new IllegalStateException("");
-      }
+      /**
+       * 没有上锁
+       */
       if (getState() == 0) throw new IllegalMonitorStateException();
+      /**
+       * 释放锁
+       */
       setExclusiveOwnerThread(null);
       setState(0);
       return true;

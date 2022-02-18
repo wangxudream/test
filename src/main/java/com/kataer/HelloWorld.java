@@ -1,6 +1,7 @@
 package com.kataer;
 
 import lombok.extern.slf4j.Slf4j;
+import sun.security.provider.MD5;
 
 import java.util.Arrays;
 
@@ -12,8 +13,6 @@ import java.util.Arrays;
 @Slf4j
 public class HelloWorld {
   public static void main(String[] args) {
-    int[] array = {1, 10, 20};
-    int[] point = {10, 15, 20};
-
+    System.out.println();
   }
 }

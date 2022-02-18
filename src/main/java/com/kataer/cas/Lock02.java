@@ -78,7 +78,7 @@ public class Lock02 implements Lock {
          * 设置所有者线程
          */
         setExclusiveOwnerThread(Thread.currentThread());
-        return true;
+        return false;
       }
       return false;
     }
@@ -99,6 +99,25 @@ public class Lock02 implements Lock {
   }
 
   public static void main(String[] args) throws InterruptedException {
+    debug();
+  }
+
+  /**
+   * 单线程测试AQS流程
+   */
+  public static void debug() {
+    Lock02 lock = new Lock02();
+    lock.lock();
+    try {
+
+    } catch (Exception e) {
+
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public static void useSync() throws InterruptedException {
     ExecutorService executorService = Executors.newFixedThreadPool(100);
     CountDownLatch countDownLatch = new CountDownLatch(1000);
     Lock02 lock = new Lock02();

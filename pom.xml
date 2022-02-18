@@ -24,6 +24,7 @@
       <artifactId>fastjson</artifactId>
       <version>1.2.70</version>
     </dependency>
+    <!--log-->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -33,6 +34,12 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>1.7.32</version>
+    </dependency>
+    <!--tools-->
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+      <version>5.7.5</version>
     </dependency>
   </dependencies>
   <build>

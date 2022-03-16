@@ -13,5 +13,6 @@
     <orderEntry type="library" name="Maven: com.alibaba:fastjson:1.2.70" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.32" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-simple:1.7.32" level="project" />
+    <orderEntry type="library" name="Maven: cn.hutool:hutool-all:5.7.5" level="project" />
   </component>
 </module>

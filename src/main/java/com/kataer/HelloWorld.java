@@ -3,7 +3,9 @@ package com.kataer;
 import lombok.extern.slf4j.Slf4j;
 import sun.security.provider.MD5;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 /**
  * @author kataer
@@ -13,6 +15,9 @@ import java.util.Arrays;
 @Slf4j
 public class HelloWorld {
   public static void main(String[] args) {
-    System.out.println();
+    Date date = new Date(System.currentTimeMillis());
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    String format = simpleDateFormat.format(date);
+    System.out.println(format);
   }
 }

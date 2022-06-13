@@ -78,7 +78,10 @@ public class Lock02 implements Lock {
          * 设置所有者线程
          */
         setExclusiveOwnerThread(Thread.currentThread());
-        return false;
+        /**
+         * 将该处设置未false可以debug整体获取锁流程
+         */
+        return true;
       }
       return false;
     }

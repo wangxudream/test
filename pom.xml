@@ -24,6 +24,12 @@
       <artifactId>fastjson</artifactId>
       <version>1.2.70</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/junit/junit -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+    </dependency>
     <!--log-->
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -45,6 +51,12 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
       <version>3.6.1</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/io.projectreactor/reactor-core -->
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+      <version>3.4.18</version>
     </dependency>
   </dependencies>
   <build>

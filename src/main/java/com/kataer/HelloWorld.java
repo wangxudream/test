@@ -1,7 +1,19 @@
 package com.kataer;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.crypto.digest.MD5;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.sun.org.apache.xml.internal.security.algorithms.implementations.SignatureDSA;
+import com.sun.org.apache.xml.internal.security.signature.XMLSignatureException;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.swing.plaf.synth.SynthOptionPaneUI;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author kataer
@@ -13,18 +25,58 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HelloWorld {
   public static void main(String[] args) {
+//    long a = 1663238578000L;
+//    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//    System.out.println(format.format(new Date(a)));
+//    MD5 md5 = MD5.create();
+//    String digestHex = md5.digestHex("Gg9527Wee");
+//    System.out.println(digestHex);
+//    long l = Long.parseLong("1453706130522566656");
+//    System.out.println(l);
+//    HashMap<String, String> map = new HashMap<>();
+//    map.put("1", "1");
+//    map.put("2", "2");
+//    map.put("3", "3");
+//    HashMap<String, String> map_b = new HashMap<>();
+//    map_b.put("2", "2");
+//    boolean b = map.keySet().retainAll(map_b.keySet());
+//    System.out.println(map);
+//    String remove = map.remove("3");
+//    System.out.println(remove);
+//    System.out.println(map);
+//    List<String> asList = Arrays.asList("1", "2");
+//    Random random = new Random(System.currentTimeMillis());
+//    for (int i = 0; i < 10; i++) {
+//      System.out.println(random.nextInt(asList.size()));
+//    }
+//    AtomicInteger atomicInteger = new AtomicInteger(100);
+//    int andSet = atomicInteger.getAndSet(101);
+//    System.out.println(andSet);
+//    String aaa = Base64.encode("我是铭鑫");
+//    System.out.println(aaa);
+//    System.out.println(Base64.decodeStr("5Li75pKt5ZOq6YeM5Lq6"));
+//    JSONArray jsonObject = JSON.parseArray("[{\"actualPayment\":11900,\"productCnt\":1,\"productId\":\"10000000204505\",\"saleParam\":\"\\\" 粉色; 均码\\\"\",\"salePrice\":11900,\"skuId\":\"477460958\",\"thumbImg\":\"https://store.mp.video.tencent-cloud.com/161/20304/snscosdownload/SH/reserved/62e0a19300005f881efc8f31f8c59609000000a000004f50\",\"title\":\"连衣裙女春秋季女装V领收腰显瘦法式茶歇碎花裙子女潮MX21A1635\"}]");
+//    System.out.println(jsonObject);
+//    MD5 md5 = MD5.create();
+//    String digestHex = md5.digestHex("Gg9527Wee");
+//    System.out.println(digestHex);
+
     long l = System.currentTimeMillis();
     System.out.println(l);
-    final StringBuilder sb = new StringBuilder()
-        .append("2018513694752768")
+    StringBuilder sb = new StringBuilder()
+        .append("1982203185594368")
         .append(l)
         .append("123456")
         .append("{\n" +
-            "  \"serialNo\": \"F0429058AEDACB8A8F91F5379C96B6D05194F219CF554649F1C4F9C615435A82\",\n" +
-            "  \"wxId\": \"44309F35E82125DDB52F942BACD5C9275194F219CF554649F1C4F9C615435A82\"\n" +
+            "    \"state\": 12,\n" +
+            "    \"start_time\": \"2022-09-26 00:00:00\",\n" +
+            "    \"end_time\": \"2022-09-27 16:00:00\",\n" +
+            "    \"search_key\": \"tkd11\",\n" +
+            "    \"search_type\": 2,\n" +
+            "    \"page\": 1,\n" +
+            "    \"limit\": 2\n" +
             "}");
-    String localSign = sb.append("12133908afdfc32a865f3e3f4a0cdadf4ec773c9").toString();
-    String digestHex = MD5.create().digestHex(localSign);
-    System.out.println(digestHex);
+    String localSign = sb.append("21eb57eae7d7f7f7d147de905998022f285d7c25").toString();
+    System.out.println(MD5.create().digestHex(localSign));
   }
 }

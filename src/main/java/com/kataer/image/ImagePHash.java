@@ -1,5 +1,7 @@
 package com.kataer.image;
-import java.awt.Graphics2D;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
@@ -8,12 +10,9 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
 
-import javax.imageio.ImageIO;
-
-/*
- * pHash-like image hash.
- * Author: Elliot Shepherd (elliot@jarofworms.com
- * Based On: http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+/**
+ * https://github.com/nivance/image-similarity
+ * https://github.com/nivance/image-similarity/blob/master/src/main/java/image/similarity/ImagePHash.java
  */
 public class ImagePHash {
 
@@ -172,7 +171,7 @@ public class ImagePHash {
   /**
    * @param srcUrl
    * @param canUrl
-   * @return 	值越小相识度越高，10之内可以简单判断这两张图片内容一致
+   * @return 值越小相识度越高，10之内可以简单判断这两张图片内容一致
    * @throws Exception
    * @throws
    */
@@ -192,6 +191,14 @@ public class ImagePHash {
     String imageSrcFile = this.getHash(new FileInputStream(srcFile));
     String imageCanFile = this.getHash(new FileInputStream(canFile));
     return this.distance(imageSrcFile, imageCanFile);
+  }
+
+  public static void main(String[] args) throws Exception {
+    ImagePHash imagePHash = new ImagePHash();
+    URL image_1 = new URL("http://wx.qlogo.cn/mmhead/Q3auHgzwzM5fTL9kOamujz4tEfr3t00TibEbmibia0ialae7XTiaoHUukBw");
+    URL image_2 = new URL("https://thirdwx.qlogo.cn/mmopen/vi_32/Q0j4TwGTfTJ6dpN6oBkkbDWhuNVOWq1KibYKs9bvgcgyOticY92EYrRvSvVb1WV8xTfzRZBLC3aVaucOxHYVJA4A/132");
+    int distance = imagePHash.distance(image_1, image_2);
+    System.out.println(distance);
   }
 
 }

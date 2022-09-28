@@ -8,20 +8,17 @@ import java.util.regex.Pattern;
  * @description: 正则匹配
  * @date 2022/9/2
  */
-public class Pattern2 {
+public class Pattern3 {
   /**
-   * S表示任何非空白字符
+   * ?存在或不存在
    */
-  private static final Pattern compile = Pattern.compile("\\s");
+  private static final Pattern compile = Pattern.compile("cars?");
 
   public static void main(String[] args) {
-    String str = "\r\naaa";
+    String str = "car cars ";
     Matcher matcher = compile.matcher(str);
-    int count = 0;
     while (matcher.find()) {
-      count++;
-      System.out.println("输出:" + matcher.group(0) + "内容");
+      System.out.println(matcher.group(0));
     }
-    System.out.println(count);
   }
 }

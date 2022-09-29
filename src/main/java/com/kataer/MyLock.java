@@ -19,16 +19,18 @@ public class MyLock {
   public static final long NO_TIMEOUT = -1;
   public static final long NO_TRY = -1;
   public static final int CAS_TIME = 3;
+  public static final int BLOCK_TIME = 10;
   private volatile long holdClientIdentity = NO_HOLD;
   private volatile AtomicLong lockCount = new AtomicLong(0);
   private volatile AtomicBoolean locked = new AtomicBoolean(false);
+  private volatile AtomicBoolean cancelLock = new AtomicBoolean(false);
   private final LinkedBlockingDeque<Waiter> blockingDeque = new LinkedBlockingDeque<>(1000);
   private final Thread timerThread = new Thread(new WaitTimeoutRunner(), "timer_thread");
   private final Thread releaseThread = new Thread(new LockTimeoutRunner(), "release_thread");
   private volatile Waiter lockWaiter = null;
 
   public MyLock() {
-    timerThread.start();
+//    timerThread.start();
     releaseThread.start();
   }
 
@@ -46,7 +48,6 @@ public class MyLock {
    * @return
    */
   public boolean lock(long clientIdentity, long timeout) {
-    Thread thread = Thread.currentThread();
     //锁被持有
     if (locked.get()) {
       if (holdClientIdentity == clientIdentity) {
@@ -57,48 +58,72 @@ public class MyLock {
       }
     }
     //锁未被持有 直接竞争->存入队列
-    int count = 1;
-    do {
-      if (locked.compareAndSet(false, true)) {
-        log.info("cas 获取锁 :{}", clientIdentity);
-        holdClientIdentity = clientIdentity;
-        lockCount.getAndIncrement();
-        lockWaiter = new Waiter(clientIdentity, NO_TRY, timeout, thread);
-        return true;
-      }
-      count++;
-    } while (count < CAS_TIME);
-    blockingDeque.addLast(new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread()));
+    if (doTryLock(clientIdentity)) {
+      setLock(clientIdentity);
+    }
+
     log.error("获取锁失败 :{}", clientIdentity);
     return false;
   }
 
 
-  public boolean tryLock(long clientIdentity, long time) throws InterruptedException {
-    long ttl = System.currentTimeMillis() + time;
+  public boolean tryLock(long clientIdentity, long time, long timeout) throws InterruptedException {
     //本身已获取锁
     if (holdClientIdentity == clientIdentity) {
       return true;
     }
     //尝试获取锁
     long deadLine = time + System.nanoTime();
-    if (doTryLock(deadLine)) {
+    if (doTryLock(clientIdentity, deadLine)) {
+      setLock(clientIdentity);
       return true;
     }
-    //
-
-//    //加入队列
-//    blockingDeque.addLast(new Waiter(clientIdentity, time, NO_TRY, Thread.currentThread()));
-    //自旋等待
-    return doTryLock(ttl);
+    return acquireLockNanos(clientIdentity, deadLine);
   }
+
+
+  private void cancelAcquireLock(Waiter waiter) {
+    try {
+      while (cancelLock.compareAndSet(false, true)) {
+        boolean remove = blockingDeque.remove(waiter);
+      }
+    } finally {
+      cancelLock.set(false);
+    }
+  }
+
+
+  private void pork() {
+    try {
+      Thread.sleep(1);
+    } catch (InterruptedException e) {
+    }
+  }
+
+
+  /**
+   * @return
+   */
+  private boolean doTryLock(long clientIdentity) {
+    int casCount = 1;
+    do {
+      if (locked.compareAndSet(false, true)) {
+        return true;
+      }
+      pork();
+    } while (++casCount < CAS_TIME);
+    log.error("获取锁失败 :{}", clientIdentity);
+    return false;
+  }
+
 
   /**
    * @param deadline
    * @return
    */
-  private boolean doTryLock(long deadline) throws InterruptedException {
-    while (true) {
+  private boolean doTryLock(long clientIdentity, long deadline) throws InterruptedException {
+    int casCount = 1;
+    do {
       if (Thread.interrupted()) {
         throw new InterruptedException();
       }
@@ -108,7 +133,74 @@ public class MyLock {
       if (locked.compareAndSet(false, true)) {
         return true;
       }
+      pork();
+    } while (++casCount < CAS_TIME);
+    log.error("cas获取锁失败 :{}", clientIdentity);
+    return false;
+  }
+
+  private boolean acquireLockNanos(long clientIdentity, long deadLine) throws InterruptedException {
+    //进入队列
+    Waiter waiter = new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread());
+    try {
+      //加至队列
+      blockingDeque.addLast(waiter);
+      log.info("进入队列后  :{}", clientIdentity);
+      //判断队列的头是不是自己
+      int count = 0;
+      do {
+        if (Thread.interrupted()) {
+          throw new InterruptedException();
+        }
+        if (deadLine < System.nanoTime()) {
+          return false;
+        }
+        if (blockingDeque.getFirst() == waiter && lockWaiter == null) {
+          log.info("进入队列后 获取锁 :{}", clientIdentity);
+          return true;
+        }
+        pork();
+      } while (++count < BLOCK_TIME);
+    } finally {
+      cancelAcquireLock(waiter);
     }
+    log.error("queue获取锁失败 :{}", clientIdentity);
+    return false;
+  }
+
+  private boolean acquireLock(long clientIdentity) {
+    //进入队列
+    Waiter waiter = new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread());
+    try {
+      //加至队列
+      blockingDeque.addLast(waiter);
+      log.info("进入队列后  :{}", clientIdentity);
+      //判断队列的头是不是自己
+      int count = 0;
+      do {
+        if (blockingDeque.getFirst() == waiter && lockWaiter == null) {
+          log.info("进入队列后 获取锁 :{}", clientIdentity);
+          return true;
+        }
+        pork();
+      } while (++count < BLOCK_TIME);
+    } finally {
+      cancelAcquireLock(waiter);
+    }
+    log.error("queue获取锁失败 :{}", clientIdentity);
+    return false;
+  }
+
+  /**
+   * 设置获取锁后的状态变化
+   *
+   * @param clientIdentity
+   */
+  private void setLock(long clientIdentity) {
+    log.info("cas 获取锁 :{}", clientIdentity);
+    holdClientIdentity = clientIdentity;
+    lockCount.getAndIncrement();
+    lockWaiter = new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread());
   }
 
   /**
@@ -142,9 +234,6 @@ public class MyLock {
     return false;
   }
 
-  private void releaseLock() {
-
-  }
 
   private class Waiter {
     private final long identity;
@@ -207,7 +296,7 @@ public class MyLock {
               lockWaiter = null;
             }
           }
-          Thread.sleep(1);
+          pork();
         } catch (Exception e) {
           //
         }

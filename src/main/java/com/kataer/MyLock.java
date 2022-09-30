@@ -3,6 +3,7 @@ package com.kataer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -19,18 +20,17 @@ public class MyLock {
   public static final long NO_TIMEOUT = -1;
   public static final long NO_TRY = -1;
   public static final int CAS_TIME = 3;
-  public static final int BLOCK_TIME = 10;
+  public static final int BLOCK_TIME = Integer.MAX_VALUE - 1;
   private volatile long holdClientIdentity = NO_HOLD;
   private volatile AtomicLong lockCount = new AtomicLong(0);
   private volatile AtomicBoolean locked = new AtomicBoolean(false);
   private volatile AtomicBoolean cancelLock = new AtomicBoolean(false);
+  private volatile AtomicBoolean waiterLock = new AtomicBoolean(false);
   private final LinkedBlockingDeque<Waiter> blockingDeque = new LinkedBlockingDeque<>(1000);
-  private final Thread timerThread = new Thread(new WaitTimeoutRunner(), "timer_thread");
   private final Thread releaseThread = new Thread(new LockTimeoutRunner(), "release_thread");
   private volatile Waiter lockWaiter = null;
 
   public MyLock() {
-//    timerThread.start();
     releaseThread.start();
   }
 
@@ -50,19 +50,22 @@ public class MyLock {
   public boolean lock(long clientIdentity, long timeout) {
     //锁被持有
     if (locked.get()) {
-      if (holdClientIdentity == clientIdentity) {
+      if (holdClientIdentity == clientIdentity && waiterLock.compareAndSet(false, true)) {
         //count计数
-        long count = lockCount.incrementAndGet();
-        log.info("重入锁 clientIdentity :{} count :{}", clientIdentity, count);
+        try {
+          long count = lockCount.incrementAndGet();
+          log.info("重入锁 clientIdentity :{} count :{}", clientIdentity, count);
+        } finally {
+          waiterLock.set(false);
+        }
         return true;
       }
     }
     //锁未被持有 直接竞争->存入队列
     if (doTryLock(clientIdentity)) {
-      setLock(clientIdentity);
+      setLock(clientIdentity, timeout);
+      return true;
     }
-
-    log.error("获取锁失败 :{}", clientIdentity);
     return false;
   }
 
@@ -73,12 +76,16 @@ public class MyLock {
       return true;
     }
     //尝试获取锁
-    long deadLine = time + System.nanoTime();
+    long deadLine = TimeUnit.MILLISECONDS.toNanos(time) + System.nanoTime();
     if (doTryLock(clientIdentity, deadLine)) {
-      setLock(clientIdentity);
+      setLock(clientIdentity, timeout);
       return true;
     }
-    return acquireLockNanos(clientIdentity, deadLine);
+    if (acquireLockNanos(clientIdentity, deadLine)) {
+      setLock(clientIdentity, timeout);
+      return true;
+    }
+    return false;
   }
 
 
@@ -108,6 +115,7 @@ public class MyLock {
     int casCount = 1;
     do {
       if (locked.compareAndSet(false, true)) {
+        log.info("cas 获取锁 :{}", clientIdentity);
         return true;
       }
       pork();
@@ -141,7 +149,7 @@ public class MyLock {
 
   private boolean acquireLockNanos(long clientIdentity, long deadLine) throws InterruptedException {
     //进入队列
-    Waiter waiter = new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread());
+    Waiter waiter = new Waiter(clientIdentity, NO_TIMEOUT, Thread.currentThread());
     try {
       //加至队列
       blockingDeque.addLast(waiter);
@@ -153,33 +161,11 @@ public class MyLock {
           throw new InterruptedException();
         }
         if (deadLine < System.nanoTime()) {
+          log.error("queue获取锁超时 :{}", clientIdentity);
           return false;
         }
         if (blockingDeque.getFirst() == waiter && lockWaiter == null) {
-          log.info("进入队列后 获取锁 :{}", clientIdentity);
-          return true;
-        }
-        pork();
-      } while (++count < BLOCK_TIME);
-    } finally {
-      cancelAcquireLock(waiter);
-    }
-    log.error("queue获取锁失败 :{}", clientIdentity);
-    return false;
-  }
-
-  private boolean acquireLock(long clientIdentity) {
-    //进入队列
-    Waiter waiter = new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread());
-    try {
-      //加至队列
-      blockingDeque.addLast(waiter);
-      log.info("进入队列后  :{}", clientIdentity);
-      //判断队列的头是不是自己
-      int count = 0;
-      do {
-        if (blockingDeque.getFirst() == waiter && lockWaiter == null) {
-          log.info("进入队列后 获取锁 :{}", clientIdentity);
+          log.info("queue获取锁成功 :{}", clientIdentity);
           return true;
         }
         pork();
@@ -196,26 +182,11 @@ public class MyLock {
    *
    * @param clientIdentity
    */
-  private void setLock(long clientIdentity) {
-    log.info("cas 获取锁 :{}", clientIdentity);
+  private void setLock(long clientIdentity, long timeout) {
+    locked.set(true);
     holdClientIdentity = clientIdentity;
     lockCount.getAndIncrement();
-    lockWaiter = new Waiter(clientIdentity, NO_TRY, NO_TIMEOUT, Thread.currentThread());
-  }
-
-  /**
-   * @return
-   */
-  private boolean doTryLockInQueue(long clientIdentity, long time) throws InterruptedException {
-    Waiter waiter = new Waiter(clientIdentity, time, NO_TRY, Thread.currentThread());
-    blockingDeque.addLast(waiter);
-    while (waiter != blockingDeque.getFirst()) {
-      if (Thread.interrupted()) {
-        throw new InterruptedException();
-      }
-      Thread.sleep(1);
-    }
-    return false;
+    lockWaiter = new Waiter(clientIdentity, timeout, Thread.currentThread());
   }
 
 
@@ -223,10 +194,15 @@ public class MyLock {
     if (locked.get()) {
       if (holdClientIdentity == clientIdentity) {
         //释放锁
-        if (lockCount.decrementAndGet() == 0) {
-          locked.set(false);
-          holdClientIdentity = NO_HOLD;
-          lockWaiter = null;
+        if (waiterLock.compareAndSet(false, true) && lockCount.decrementAndGet() == 0) {
+          try {
+            locked.set(false);
+            holdClientIdentity = NO_HOLD;
+            lockWaiter = null;
+            log.info("释放锁 :{}", clientIdentity);
+          } finally {
+            waiterLock.set(false);
+          }
         }
         return true;
       }
@@ -237,44 +213,13 @@ public class MyLock {
 
   private class Waiter {
     private final long identity;
-    private final long tryExpireTime;
     private final long lockExpireTime;
     private final Thread thread;
 
-    public Waiter(long identity, long tryExpireTime, long lockExpireTime, Thread thread) {
+    public Waiter(long identity, long lockExpireTime, Thread thread) {
       this.identity = identity;
-      this.tryExpireTime = System.currentTimeMillis() + tryExpireTime;
       this.lockExpireTime = System.currentTimeMillis() + lockExpireTime;
       this.thread = thread;
-    }
-  }
-
-  private class WaitTimeoutRunner implements Runnable {
-
-    @SuppressWarnings("InfiniteLoopStatement")
-    @Override
-    public void run() {
-      while (true) {
-        try {
-          if (!locked.get()) {
-            Waiter waiter = blockingDeque.removeFirst();
-            if (waiter.tryExpireTime < System.currentTimeMillis()) {
-              //打断线程
-              log.info("尝试获取锁失败 打断线程 :{}", waiter.identity);
-              waiter.thread.interrupt();
-            } else {
-              //获取锁
-              log.info("队列中获取锁 :{}", waiter.identity);
-              locked.getAndSet(true);
-              holdClientIdentity = waiter.identity;
-              lockCount.getAndIncrement();
-            }
-          }
-          Thread.sleep(1);
-        } catch (Exception e) {
-          //
-        }
-      }
     }
   }
 
@@ -285,19 +230,24 @@ public class MyLock {
     public void run() {
       while (true) {
         try {
-          if (locked.get()) {
+          if (locked.get() && lockWaiter != null) {
             //锁被占用
-            if (lockWaiter.lockExpireTime <= System.currentTimeMillis()) {
-              //需要释放锁
-              log.info("持有锁超时 释放锁 :{}", lockWaiter.identity);
-              locked.getAndSet(false);
-              lockCount.set(0);
-              holdClientIdentity = NO_HOLD;
-              lockWaiter = null;
+            if (lockWaiter.lockExpireTime <= System.currentTimeMillis() && lockWaiter.lockExpireTime != NO_TIMEOUT && waiterLock.compareAndSet(false, true)) {
+              try {
+                //需要释放锁
+                log.info("持有锁超时 释放锁 :{}", lockWaiter.identity);
+                locked.getAndSet(false);
+                lockCount.set(0);
+                holdClientIdentity = NO_HOLD;
+                lockWaiter = null;
+              } finally {
+                waiterLock.set(false);
+              }
             }
           }
           pork();
         } catch (Exception e) {
+          e.printStackTrace();
           //
         }
       }

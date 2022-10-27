@@ -64,19 +64,45 @@ public class HelloWorld {
     long l = System.currentTimeMillis();
     System.out.println(l);
     StringBuilder sb = new StringBuilder()
-        .append("1982203185594368")
+        .append("4137169018945536")
         .append(l)
         .append("123456")
         .append("{\n" +
-            "    \"state\": 12,\n" +
-            "    \"start_time\": \"2022-09-26 00:00:00\",\n" +
-            "    \"end_time\": \"2022-09-27 16:00:00\",\n" +
-            "    \"search_key\": \"tkd11\",\n" +
-            "    \"search_type\": 2,\n" +
-            "    \"page\": 1,\n" +
-            "    \"limit\": 2\n" +
+            "  \"nactivityId\": \"1100007466\"\n" +
             "}");
-    String localSign = sb.append("21eb57eae7d7f7f7d147de905998022f285d7c25").toString();
+    String localSign = sb.append("b461ca7b0f2a9e2d34ff0aa66bc2d3fe5204a622").toString();
     System.out.println(MD5.create().digestHex(localSign));
+    /**
+     * 0
+     * 0 1
+     * 01 10
+     * 0110 1001
+     * 01101001 10010110
+     */
+//    int n = 5;
+//    int respIndex = 4;
+//    int len = (int) Math.pow(2, n - 1);
+//    System.out.println(Math.pow(2, 0));
+//    byte[] res = new byte[len];
+//    test(n, 1, res, respIndex);
+//    System.out.println(Arrays.toString(res));
+//    System.out.println(res[respIndex]);
   }
+
+//  //  public
+//  public static byte[] test(int n, int index, byte[] res, int respIndex) {
+//    if (index < n) {
+//      //加上原来的反转
+//      int start = (int) Math.pow(2, index - 1);
+//      for (int i = 0; i < start; i++) {
+//        int temp = start + i;
+//        res[temp] = (byte) (res[i] == 0 ? 1 : 0);
+//        if (temp == respIndex) {
+//          return res;
+//        }
+//      }
+//      test(n, ++index, res, respIndex);
+//    }
+//    return res;
+//  }
 }
